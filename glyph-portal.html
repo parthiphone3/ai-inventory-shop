@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glyph Portal</title>
+<!--
+  Glyph Portal © 2026 Christian Katzmann. MIT.
+  Origin: UsefulPortal.astro on https://ktzm.dk. Keep this notice with copies.
+  Vanilla HTML/JS port of the React component.
+-->
+<style>
+:root{--paper:#fff;--ink:#0c1212;--field:#0b3b2a;--fg:#fbfbfa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,sans-serif}
+#gp{position:relative;isolation:isolate}
+#vp{position:absolute;top:0;left:0;height:100vh;height:100svh;width:0;visibility:hidden;pointer-events:none}
+#pin{position:relative;height:var(--h,100svh);overflow:clip;isolation:isolate;container-type:size}
+#field{position:absolute;inset:0;opacity:0;pointer-events:none;overflow:hidden}
+#gp[data-ready] #field{opacity:1}
+#field i{position:absolute;inset:0;transform:scale(var(--fs,1));background:
+ radial-gradient(circle at 18% 8%,rgba(68,125,98,.72),transparent 34%),
+ radial-gradient(circle at 82% 20%,rgba(251,251,250,.12),transparent 28%),
+ radial-gradient(circle at 48% 78%,rgba(9,48,35,.5),transparent 44%),
+ linear-gradient(135deg,#0b3b2a,#14573f 48%,#082d22)}
+#art{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#choices{position:absolute;inset:0;visibility:hidden}
+#gp[data-choosing=true] #choices{visibility:visible}
+#choices button{position:absolute;border:0;padding:0;margin:0;background:transparent;cursor:pointer;touch-action:pan-y}
+#choices button:disabled{pointer-events:none}
+#choices button:focus-visible{outline:2px solid var(--field);outline-offset:5px}
+#fallback{position:absolute;inset:0;display:grid;place-items:center;font:900 min(calc(100cqw / 7),38cqh)/1 "Arial Black",Arial,sans-serif;color:var(--field)}
+#gp[data-ready] #fallback{visibility:hidden}
+#front{position:absolute;inset:0;opacity:var(--cap,1);pointer-events:none}
+#front header{position:absolute;inset:28px clamp(24px,5vw,64px) auto;display:flex;justify-content:space-between;font-size:13px;color:#71766f}
+#front header b{font-size:19px;letter-spacing:-.06em;color:#18251e}
+#front p{position:absolute;left:24px;right:24px;margin:0;text-align:center;color:#646a63;font-size:15px}
+#sub{top:calc(var(--wb,50%) + 28px)}
+#hint{bottom:7%;font-size:12px!important;color:#7c817b!important}
+#enter{position:absolute;left:50%;top:calc(var(--wb,50%) + 78px);transform:translateX(-50%);display:inline-flex;align-items:center;gap:24px;min-height:46px;padding:0 20px;background:#142b22;border-radius:10px;color:#fff;font-size:13px;text-decoration:none;opacity:var(--cap,1);pointer-events:var(--hit,auto)}
+#enter:hover{background:#204434}
+#enter:focus-visible{outline:2px solid #176247;outline-offset:4px;opacity:1}
+#content{position:relative;min-height:var(--h,100svh);padding:5.5rem clamp(1.25rem,5vw,5rem) 6.5rem;display:grid;align-content:center;background:var(--field);color:var(--fg)}
+#gp[data-motion=on] #pin{position:sticky;top:0}
+#gp[data-motion=on] #content{margin-top:calc((var(--len) - 1) * var(--h));background:transparent;opacity:var(--rev,0);pointer-events:none}
+#gp[data-motion=on][data-entered=true] #content,#gp[data-motion=on] #content:focus-within{pointer-events:auto;opacity:1}
+#gp[data-motion=on]:has(#content:focus-within) #field{clip-path:none!important}
+#gp[data-motion=off] #hint{display:none}
+.copy{width:min(100%,72rem);margin:auto;display:flex;flex-direction:column;gap:3rem}
+.copy h2{margin:0;max-width:30rem;font:400 clamp(1.9rem,1.2rem + 2.4vw,2.8rem)/1.2 Georgia,serif;letter-spacing:-.02em;text-wrap:balance}
+.feat{display:grid;gap:1.75rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
+.feat div{border-top:1px solid rgba(251,251,250,.22);padding-top:1rem}
+.feat h3{margin:0;font-size:1.1rem;font-weight:500}
+.feat p{margin:.5rem 0 0;color:rgba(251,251,250,.85);font-size:.95rem;line-height:1.55}
+footer{padding:6rem 1.5rem;text-align:center;color:#646a63;font-size:14px}
+@media(prefers-reduced-motion:reduce){#pin{position:relative!important}#content{margin-top:0!important;opacity:1!important;background:var(--field)!important;min-height:0;padding-block:64px}}
+</style>
+</head>
+<body>
+<section id="gp" aria-label="SUBLIME">
+  <div id="vp" aria-hidden="true"></div>
+  <div id="pin">
+    <div id="field" aria-hidden="true"><i></i></div>
+    <svg id="art" aria-hidden="true" focusable="false">
+      <defs><clipPath id="clip" clipPathUnits="userSpaceOnUse"><text id="glyph" x="0" y="0"></text></clipPath></defs>
+    </svg>
+    <div id="choices" role="radiogroup" aria-label="Choose the letter to enter through" inert></div>
+    <div id="front">
+      <header><b>sublime.</b><span>Design &amp; digital experiences</span></header>
+      <p id="sub">Follow your curiosity.</p>
+      <p id="hint">Scroll for a closer look ↓</p>
+    </div>
+    <span id="fallback" aria-hidden="true">SUBLIME</span>
+    <a id="enter" href="#content">Step inside <span aria-hidden="true">↘</span></a>
+  </div>
+  <div id="content" tabindex="-1">
+    <div class="copy">
+      <h2>A different way into what comes next.</h2>
+      <div class="feat">
+        <div><h3>Choose your way in</h3><p>Hover or tap any letter, then scroll. Arrow keys work too.</p></div>
+        <div><h3>Set the scene</h3><p>Swap the green gradient for a photo, video or canvas.</p></div>
+        <div><h3>Keep going</h3><p>This section is yours. Add a story, a project, or a reason to stay.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+<footer>The page continues here.</footer>
+
+<script>
+(() => {
+  const WORD = "SUBLIME", FOCUS = "", LENGTH = 2.4, WEIGHT = 900, INTERACTIVE = true;
+  const FONT = '"Arial Black", Arial, sans-serif';
+
+  const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
+  const smooth = (a, b, n) => { const t = clamp((n - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const sec = document.querySelector("#gp"), pin = document.querySelector("#pin"), field = document.querySelector("#field"), clip = document.querySelector("#clip"),
+        glyph = document.querySelector("#glyph"), choices = document.querySelector("#choices"), vp = document.querySelector("#vp");
+  const text = WORD.trim().normalize("NFC") || "SUBLIME";
+  sec.style.setProperty("--len", LENGTH);
+  glyph.textContent = text;
+  Object.assign(glyph.style, { fontFamily: FONT, fontWeight: WEIGHT, fontSize: "100px", fontKerning: "none", fontVariantLigatures: "none" });
+
+  const chars = []; let off = 0;
+  for (const c of Array.from(text)) { chars.push({ c, i: off }); off += c.length; }
+  const buttons = chars.map(({ c, i }, n) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false");
+    b.tabIndex = -1; b.dataset.i = String(i); b.setAttribute("aria-label", `${c}, letter ${n + 1} of ${chars.length}`);
+    choices.appendChild(b); return b;
+  });
+
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const cv = document.createElement("canvas");
+  const ctx = cv.getContext("2d", { willReadFrequently: true });
+  let W = 1, H = 1, travel = 1, startScale = 1, endScale = 1;
+  let center = { x: 0, y: 0 }, target = null, bounds = { x: 0, y: 0, width: 1, height: 1 };
+  let candidates = [], letters = [], ready = false, choosing = false, dirty = true, raf = 0, last = -1;
+
+  function interior(char, font) {
+    ctx.font = font;
+    const m = ctx.measureText(char), pad = 8;
+    const left = Math.ceil(m.actualBoundingBoxLeft), asc = Math.ceil(m.actualBoundingBoxAscent);
+    cv.width = Math.max(1, Math.ceil(m.actualBoundingBoxLeft + m.actualBoundingBoxRight) + pad * 2);
+    cv.height = Math.max(1, Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) + pad * 2);
+    ctx.font = font; ctx.fontKerning = "none";
+    ctx.fillText(char, pad + left, pad + asc);
+    const w = cv.width, h = cv.height, px = ctx.getImageData(0, 0, w, h).data;
+    const rows = new Uint16Array(w + 1);
+    let size = 0, bx = 0, by = 0;
+    for (let y = 0; y < h; y++) {
+      let diag = 0;
+      for (let x = 0; x < w; x++) {
+        const above = rows[x + 1];
+        rows[x + 1] = px[(y * w + x) * 4 + 3] > 245 ? Math.min(above, rows[x], diag) + 1 : 0;
+        diag = above;
+        if (rows[x + 1] > size) { size = rows[x + 1]; bx = x; by = y; }
+      }
+    }
+    if (size < 3) return null;
+    return { x: (bx + 1 - size / 2 - pad - left) / 3, y: (by + 1 - size / 2 - pad - asc) / 3, radius: (size / 2 - 1) / 3 };
+  }
+
+  function readInk() {
+    const f = getComputedStyle(glyph);
+    const scanFont = `${f.fontWeight} 300px ${f.fontFamily}`;
+    const baseFont = `${f.fontWeight} 100px ${f.fontFamily}`;
+    ctx.font = baseFont; ctx.fontKerning = "none";
+    const m = ctx.measureText(text);
+    bounds = { x: -m.actualBoundingBoxLeft, y: -m.actualBoundingBoxAscent,
+      width: m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+      height: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent };
+    if (!bounds.width || !bounds.height) return false;
+    center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+    const requested = FOCUS ? text.indexOf(FOCUS.normalize("NFC")) : -1;
+    candidates = []; letters = [];
+    for (const { c, i } of chars) {
+      ctx.font = baseFont;
+      const adv = ctx.measureText(text.slice(0, i)).width, lm = ctx.measureText(c);
+      letters.push({ index: i, x: adv - lm.actualBoundingBoxLeft, y: -lm.actualBoundingBoxAscent,
+        width: lm.actualBoundingBoxLeft + lm.actualBoundingBoxRight,
+        height: lm.actualBoundingBoxAscent + lm.actualBoundingBoxDescent });
+      const found = interior(c, scanFont);
+      if (found) candidates.push({ ...found, x: found.x + adv, index: i });
+    }
+    target = candidates.find((k) => k.index === requested) ||
+      [...candidates].sort((a, b) => b.radius - a.radius || Math.abs(a.x - center.x) - Math.abs(b.x - center.x))[0] || null;
+    return true;
+  }
+
+  function select(next) {
+    target = next;
+    endScale = target ? Math.max(startScale, Math.hypot(W, H) / (target.radius * 1.35)) : startScale;
+    for (const b of buttons) {
+      const idx = Number(b.dataset.i);
+      b.disabled = !candidates.some((k) => k.index === idx);
+      b.setAttribute("aria-checked", String(idx === target?.index));
+      b.tabIndex = idx === target?.index ? 0 : -1;
+    }
+  }
+
+  function position() {
+    return clamp(-sec.getBoundingClientRect().top / travel);
+  }
+
+  function paint(progress) {
+    const isStatic = motion.matches || !target;
+    const p = isStatic ? 0 : progress, t = clamp(p / 0.78);
+    const eased = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+    const scale = Math.exp(Math.log(startScale) + Math.log(endScale / startScale) * eased);
+    const blend = endScale === startScale ? 0 : (1 / scale - 1 / startScale) / (1 / endScale - 1 / startScale);
+    const cx = center.x + ((target?.x ?? center.x) - center.x) * blend;
+    const cy = center.y + ((target?.y ?? center.y) - center.y) * blend;
+    const roll = -4 * smooth(0.06, 0.5, t) * (1 - smooth(0.62, 0.92, t));
+    const r = roll * Math.PI / 180;
+    const dx = W / 2 / scale, dy = (H * 0.46 + H * 0.04 * eased) / scale;
+    clip.setAttribute("transform", `scale(${scale}) rotate(${roll})`);
+    glyph.setAttribute("transform",
+      `translate(${Math.cos(r) * dx + Math.sin(r) * dy - cx} ${-Math.sin(r) * dx + Math.cos(r) * dy - cy})`);
+    choosing = INTERACTIVE && !isStatic && p < 0.04;
+    choices.inert = !choosing;
+    sec.dataset.choosing = String(choosing);
+    field.style.clipPath = t >= 1 ? "none" : "url(#clip)";
+    sec.style.setProperty("--cap", 1 - smooth(0.01, 0.16, p));
+    sec.style.setProperty("--rev", isStatic ? 1 : smooth(0.78, 0.9, p));
+    sec.style.setProperty("--fs", 1 + 0.16 * smooth(0, 0.82, p));
+    sec.style.setProperty("--hit", p < 0.08 ? "auto" : "none");
+    sec.dataset.entered = String(p >= 0.9);
+    last = p;
+  }
+
+  function layout() {
+    if (!sec.clientWidth) return;
+    W = pin.clientWidth;
+    const vh = Math.max(1, vp.offsetHeight);
+    H = motion.matches ? Math.min(vh * 0.75, 480) : vh;
+    sec.style.setProperty("--h", H + "px");
+    travel = H * LENGTH;
+    document.querySelector("#art").setAttribute("viewBox", `0 0 ${W} ${H}`);
+    if (!ready) { ready = readInk(); if (!ready) return; }
+    startScale = Math.min(W * 0.84 / bounds.width, (H * 0.38) / bounds.height);
+    select(target);
+    for (const b of buttons) {
+      const l = letters.find((k) => k.index === Number(b.dataset.i));
+      Object.assign(b.style, {
+        left: `${W / 2 + (l.x - center.x) * startScale}px`,
+        top: `${H * 0.46 + (l.y - center.y) * startScale - Math.max(0, 44 - l.height * startScale) / 2}px`,
+        width: `${Math.max(1, l.width * startScale)}px`,
+        height: `${Math.max(44, l.height * startScale)}px`,
+      });
+    }
+    sec.style.setProperty("--wb", `${H * 0.46 + bounds.height * startScale / 2}px`);
+    sec.dataset.ready = "true";
+    sec.dataset.motion = (!motion.matches && target) ? "on" : "off";
+  }
+
+  function frame() {
+    raf = 0;
+    if (dirty) { dirty = false; layout(); }
+    if (ready) paint(position());
+  }
+  const schedule = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  const resize = () => { dirty = true; schedule(); };
+
+  const choose = (e) => {
+    if (!choosing) return;
+    const b = e.target.closest("button");
+    const next = b && candidates.find((k) => k.index === Number(b.dataset.i));
+    if (next && next !== target) { select(next); paint(position()); }
+  };
+  choices.addEventListener("pointerover", choose);
+  choices.addEventListener("click", choose);
+  choices.addEventListener("focusin", choose);
+  choices.addEventListener("keydown", (e) => {
+    if (!choosing || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const cur = candidates.indexOf(target), n = candidates.length;
+    const idx = e.key === "Home" ? 0 : e.key === "End" ? n - 1
+      : (cur + (/Left|Up/.test(e.key) ? -1 : 1) + n) % n;
+    buttons.find((b) => Number(b.dataset.i) === candidates[idx].index)?.focus({ preventScroll: true });
+  });
+
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("resize", resize);
+  if (window.visualViewport) visualViewport.addEventListener("resize", resize);
+  motion.addEventListener("change", resize);
+  new ResizeObserver(resize).observe(sec);
+
+  (document.fonts?.ready ?? Promise.resolve()).then(resize);
+  resize();
+})();
+</script>
+</body>
+</html>
